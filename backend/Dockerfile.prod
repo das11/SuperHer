@@ -1,0 +1,31 @@
+
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Set work directory
+WORKDIR /app
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+# Copy pyproject.toml and uv.lock
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies using uv
+# Configure uv to use the system Python environment
+ENV UV_PROJECT_ENVIRONMENT="/usr/local"
+RUN uv sync --frozen --no-dev
+
+# Copy project
+COPY . .
+
+# Expose port
+EXPOSE 8000
+
+# Command to run the application
+# We use uvicorn workers with gunicorn for production
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "-b", "0.0.0.0:8000", "app.main:app"]

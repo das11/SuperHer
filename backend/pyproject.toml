@@ -1,0 +1,29 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9.5"
+
+dependencies = [
+    "aiomysql>=0.3.2",
+    "alembic>=1.16.5",
+    "email-validator>=2.3.0",
+    "fastapi>=0.124.4",
+    "greenlet>=3.2.4",
+    "mysql-connector-python>=9.4.0",
+    "passlib[bcrypt]>=1.7.4",
+    "pydantic-settings>=2.11.0",
+    "python-jose[cryptography]>=3.5.0",
+    "requests>=2.32.5",
+    "sqlalchemy>=2.0.45",
+    "uvicorn[standard]>=0.38.0",
+    "httpx",
+    "gunicorn==20.1.0",
+    "boto3>=1.34.0"
+]
+
+[tool.pyrefly]
+# Since this file is inside the 'backend' folder, "." tells Pyrefly 
+# to treat 'backend' as a source root.
+search-path = ["."]

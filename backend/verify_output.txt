@@ -1,0 +1,39 @@
+🚀 Starting Phase 5.1 verification...
+Creating Advertiser: StatsTest_e6fe50e9
+✅ Generated API Key: vRTuC...
+🔗 Tracking Link created: EQGfcZ
+👉 Simulating 10 Clicks...
+📦 Simulating 12 customer events...
+⚠️ Event failed: {"id":38,"status":"processed","attributed_influencer":"11"}
+⚠️ Event failed: {"id":39,"status":"processed","attributed_influencer":"11"}
+⚠️ Event failed: {"id":40,"status":"processed","attributed_influencer":"11"}
+⚠️ Event failed: {"id":41,"status":"processed","attributed_influencer":"11"}
+⚠️ Event failed: {"id":42,"status":"processed","attributed_influencer":"11"}
+⚠️ Event failed: {"id":43,"status":"processed","attributed_influencer":"11"}
+⚠️ Event failed: {"id":44,"status":"processed","attributed_influencer":"11"}
+⚠️ Event failed: {"id":45,"status":"processed","attributed_influencer":null}
+⚠️ Event failed: {"id":46,"status":"processed","attributed_influencer":"11"}
+⚠️ Event failed: {"id":47,"status":"processed","attributed_influencer":"11"}
+⚠️ Event failed: {"id":48,"status":"processed","attributed_influencer":"11"}
+⚠️ Event failed: {"id":49,"status":"processed","attributed_influencer":"11"}
+
+🔎 Verifying Stats...
+❌ call to overview failed: 500 - Internal Server Error
+Traceback (most recent call last):
+  File "/Users/interfacev2/KXM-BM/Prospects/SuperHer/Dev/backend/scripts/verify_phase5_stats.py", line 146, in <module>
+    asyncio.run(test_stats_flow())
+  File "/Users/interfacev2/.pyenv/versions/3.9.5/lib/python3.9/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Users/interfacev2/.pyenv/versions/3.9.5/lib/python3.9/asyncio/base_events.py", line 642, in run_until_complete
+    return future.result()
+  File "/Users/interfacev2/KXM-BM/Prospects/SuperHer/Dev/backend/scripts/verify_phase5_stats.py", line 113, in test_stats_flow
+    stats = resp.json()
+  File "/Users/interfacev2/.cache/uv/archive-v0/UZNfklJlVRaRrlWzPUtnp/lib/python3.9/site-packages/httpx/_models.py", line 832, in json
+    return jsonlib.loads(self.content, **kwargs)
+  File "/Users/interfacev2/.pyenv/versions/3.9.5/lib/python3.9/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+  File "/Users/interfacev2/.pyenv/versions/3.9.5/lib/python3.9/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+  File "/Users/interfacev2/.pyenv/versions/3.9.5/lib/python3.9/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)

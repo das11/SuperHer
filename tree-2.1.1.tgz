@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="/style/fresh.css" />
+<title>File Not Found (Probably Newer Version Available)</title>
+</head>
+<body>
+<h2><img src="/warix/forest1.gif" width="45" height="29" ALT="">&nbsp;
+"<a href="/" style="text-decoration:none" title="Go to the Fossies home page">Fossies</a>" - the Free Open Source Software Archive
+&nbsp;<img src="/warix/forest2.gif" width="48" height="30" ALT=""></h2>
+<hr>
+<a href="/linux/misc/"><img src="/warix/up.gif" ALT="up" border=0></a>
+ <a href="/"><img src="/warix/home.gif" ALT="home" border=0></a>
+ <a href="/features.html"><img src="/warix/question.gif" ALT="help" border=0></a>
+ <a href="/comments.html"><img src="/warix/comments.gif" ALT="comments" border=0></a>
+<hr>
+<h2>File gone - probably newer version of requested archive available</h2>
+Sorry, the requested URL path was not (or no longer) found on this server.
+<p>
+Probably since it was replaced by a newer version.
+<p>
+A search for a fresher archive gives the following result
+(to browse the archive contents click on the name of the found archive):
+<hr><h2>... in the <a href="/">Fossies</a> folder "<a href="/linux/misc">/linux/misc</a>":</h2>
+<table cellpadding="3" cellspacing="3" border="0" bgcolor="#f0f0f0">
+<tr><td valign="top"><a href="/linux/misc/tree-2.2.1.tar.gz"><img src="/dl.gif" class="dl" title="[Download]" alt=""></a></td><td> <a href="/linux/misc/tree-2.2.1.tar.gz/" title="Downloads, contents, member browsing &amp; more ..."><b>tree-2.2.1.tar.gz</b></a> (26 Nov 2024, 65685 Bytes)<br><div class="desc"><a href="http://oldmanprogrammer.net/source.php?dir=projects/tree">tree</a> is a depth-indenting recursive directory listing program.</div></td></tr>
+</table>
+<hr>
+<p></p>
+Just a "Fossies" guess: The requested file or information you originally searched for under
+<pre>
+  <b>/linux/misc/tree-2.1.1.tgz</b>
+</pre>
+may now be available under
+<pre>
+  <a href="/linux/misc/tree-2.2.1.tar.gz">/linux/misc/tree-2.2.1.tar.gz</a>
+</pre>
+</body></html>

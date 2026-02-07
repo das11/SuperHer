@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  backend:
+    image: ${DOCKER_USERNAME}/superher-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    # CHANGE: Use env_file instead of listing variables manually
+    env_file:
+      - .env
+    networks:
+      - app_network
+    restart: always
+
+  frontend:
+    image: ${DOCKER_USERNAME}/superher-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    # Optional: If frontend needs API URLs at build/runtime, add env_file here too
+    networks:
+      - app_network
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro # Mount Host Certs
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - app_network
+    restart: always
+
+networks:
+  app_network:
+    driver: bridge

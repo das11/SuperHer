@@ -12,7 +12,11 @@ const TrackingLinkList = ({ links, isLoading }) => {
     const [showModal, setShowModal] = useState(false);
 
     const handleCopy = (shortCode, id) => {
-        const fullUrl = `${window.location.protocol}//${window.location.hostname}:8000/api/v1/r/${shortCode}`;
+        // Environment-aware URL generation
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const fullUrl = isLocal
+            ? `${window.location.protocol}//${window.location.hostname}:8000/api/v1/r/${shortCode}`
+            : `${window.location.protocol}//${window.location.host}/r/${shortCode}`;
         navigator.clipboard.writeText(fullUrl);
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);

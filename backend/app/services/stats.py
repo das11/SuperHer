@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 from app.models.customer_event import CustomerEvent, EventType
 from app.models.click_event import ClickEvent
-from app.models.influencer import Influencer
+from app.models.influencer import Influencer, CampaignInfluencer
 from app.models.campaign import Campaign
 from app.models.tracking_link import TrackingLink
 
@@ -58,7 +58,26 @@ class StatsService:
             base_query = select(
                 func.count(CustomerEvent.id).label("total_events"),
                 func.sum(case((CustomerEvent.event_type == EventType.purchase, 1), else_=0)).label("total_conversions"),
-                func.sum(case((CustomerEvent.event_type == EventType.purchase, CustomerEvent.revenue), else_=0)).label("total_revenue")
+                func.sum(case((CustomerEvent.event_type == EventType.purchase, CustomerEvent.revenue), else_=0)).label("total_revenue"),
+                func.sum(
+                    case((CustomerEvent.event_type == EventType.purchase,
+                         case(
+                             (CampaignInfluencer.revenue_share_type == 'percentage', 
+                              func.coalesce(CustomerEvent.revenue, 0) * func.coalesce(CampaignInfluencer.revenue_share_value, 0) / 100.0),
+                             (CampaignInfluencer.revenue_share_type == 'flat', 
+                              func.coalesce(CampaignInfluencer.revenue_share_value, 0)),
+                             else_=0.0
+                         )
+                    ), else_=0.0)
+                ).label("total_payout")
+            )
+            
+            # Join CampaignInfluencer to get revenue share details
+            # We need a left join because not all events will have a corresponding influencer share setup
+            base_query = base_query.outerjoin(
+                CampaignInfluencer, 
+                (CampaignInfluencer.campaign_id == CustomerEvent.campaign_id) & 
+                (CampaignInfluencer.influencer_id == CustomerEvent.influencer_id)
             )
             
             if advertiser_id:
@@ -79,6 +98,7 @@ class StatsService:
                 "total_clicks": total_clicks,
                 "total_conversions": total_conversions,
                 "total_revenue": total_revenue,
+                "total_payout": row.total_payout or 0.0,
                 "conversion_rate": round(conv_rate, 2)
             }
         except Exception as e:
@@ -182,8 +202,24 @@ class StatsService:
                 Influencer.social_handle,
                 func.count(CustomerEvent.id).label("total_events"),
                 func.sum(case((CustomerEvent.event_type == EventType.purchase, 1), else_=0)).label("purchases"),
-                func.sum(case((CustomerEvent.event_type == EventType.purchase, CustomerEvent.revenue), else_=0)).label("revenue")
-            ).join(Influencer, CustomerEvent.influencer_id == Influencer.id)
+                func.sum(case((CustomerEvent.event_type == EventType.purchase, CustomerEvent.revenue), else_=0)).label("revenue"),
+                func.sum(
+                    case((CustomerEvent.event_type == EventType.purchase,
+                         case(
+                             (CampaignInfluencer.revenue_share_type == 'percentage', 
+                              func.coalesce(CustomerEvent.revenue, 0) * func.coalesce(CampaignInfluencer.revenue_share_value, 0) / 100.0),
+                             (CampaignInfluencer.revenue_share_type == 'flat', 
+                              func.coalesce(CampaignInfluencer.revenue_share_value, 0)),
+                             else_=0.0
+                         )
+                    ), else_=0.0)
+                ).label("payout")
+            ).join(Influencer, CustomerEvent.influencer_id == Influencer.id)\
+             .outerjoin(
+                CampaignInfluencer, 
+                (CampaignInfluencer.campaign_id == CustomerEvent.campaign_id) & 
+                (CampaignInfluencer.influencer_id == CustomerEvent.influencer_id)
+            )
             
             if advertiser_id:
                 stmt = stmt.where(CustomerEvent.advertiser_id == advertiser_id)
@@ -202,7 +238,8 @@ class StatsService:
                     "handle": row.social_handle,
                     "events": row.total_events,
                     "purchases": row.purchases,
-                    "revenue": row.revenue or 0.0
+                    "revenue": row.revenue or 0.0,
+                    "payout": row.payout or 0.0
                 }
                 for row in result
             ]
@@ -231,14 +268,30 @@ class StatsService:
                 Campaign.status,
                 func.count(CustomerEvent.id).label("events"),
                 func.sum(case((CustomerEvent.event_type == EventType.purchase, 1), else_=0)).label("purchases"),
-                func.sum(CustomerEvent.revenue).label("revenue")
+                func.sum(CustomerEvent.revenue).label("revenue"),
+                func.sum(
+                    case((CustomerEvent.event_type == EventType.purchase,
+                         case(
+                             (CampaignInfluencer.revenue_share_type == 'percentage', 
+                              func.coalesce(CustomerEvent.revenue, 0) * func.coalesce(CampaignInfluencer.revenue_share_value, 0) / 100.0),
+                             (CampaignInfluencer.revenue_share_type == 'flat', 
+                              func.coalesce(CampaignInfluencer.revenue_share_value, 0)),
+                             else_=0.0
+                         )
+                    ), else_=0.0)
+                ).label("payout")
             )
 
             join_condition = (CustomerEvent.campaign_id == Campaign.id)
             if advertiser_id:
                  join_condition = join_condition & (CustomerEvent.advertiser_id == advertiser_id)
                 
-            stmt = stmt.outerjoin(CustomerEvent, join_condition)
+            stmt = stmt.outerjoin(CustomerEvent, join_condition)\
+                       .outerjoin(
+                            CampaignInfluencer, 
+                            (CampaignInfluencer.campaign_id == Campaign.id) & 
+                            (CampaignInfluencer.influencer_id == CustomerEvent.influencer_id)
+                        )
 
             if advertiser_id:
                 stmt = stmt.where(Campaign.advertiser_id == advertiser_id)
@@ -264,7 +317,8 @@ class StatsService:
                     "status": row.status.value if hasattr(row.status, 'value') else row.status,
                     "events": row.events,
                     "purchases": row.purchases,
-                    "revenue": row.revenue or 0.0
+                    "revenue": row.revenue or 0.0,
+                    "payout": row.payout or 0.0
                 } 
                 for row in result
             ]

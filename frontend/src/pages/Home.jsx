@@ -15,6 +15,14 @@ import { subDays } from 'date-fns';
 
 import { useAuth } from '../context/AuthContext';
 
+const formatCompact = (val) => {
+    if (val === undefined || val === null) return "0";
+    if (val >= 1000000) return (val / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (val >= 1000) return (val / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    // For small numbers, limit decimal places to 2 to prevent overflow
+    return Number(val).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+};
+
 export default function Home() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
@@ -23,6 +31,7 @@ export default function Home() {
         activeCampaigns: 0,
         influencers: 0,
         revenue: 0,
+        payout: 0,
         clicks: 0
     });
     const [chartData, setChartData] = useState([]);
@@ -57,6 +66,7 @@ export default function Home() {
                 }
 
                 let revenue = 0;
+                let payout = 0;
                 let clicks = 0;
                 let cData = [];
 
@@ -80,6 +90,7 @@ export default function Home() {
                     ]);
 
                     revenue = ovRes.data.total_revenue;
+                    payout = ovRes.data.total_payout;
                     clicks = ovRes.data.total_clicks;
                     cData = chRes.data;
                 }
@@ -89,6 +100,7 @@ export default function Home() {
                     activeCampaigns: campRes.data.filter(c => c.status === 'active').length,
                     influencers: infRes.data.length,
                     revenue: revenue,
+                    payout: payout,
                     clicks: clicks
                 });
                 setChartData(cData);
@@ -110,7 +122,7 @@ export default function Home() {
     const cards = [
         {
             title: 'Total Advertisers',
-            value: stats.advertisers,
+            value: formatCompact(stats.advertisers),
             trend: 'Platform-wide',
             icon: <Target className="text-white" />,
             to: '/advertisers',
@@ -119,7 +131,7 @@ export default function Home() {
         },
         {
             title: 'Active Campaigns',
-            value: stats.activeCampaigns,
+            value: formatCompact(stats.activeCampaigns),
             trend: 'Currently Live',
             icon: <Zap className="text-white" />,
             to: '/campaigns',
@@ -128,7 +140,7 @@ export default function Home() {
         },
         {
             title: 'Total Influencers',
-            value: stats.influencers,
+            value: formatCompact(stats.influencers),
             trend: 'Registered',
             icon: <Users className="text-white" />,
             to: '/influencers',
@@ -137,12 +149,21 @@ export default function Home() {
         },
         {
             title: 'Total Revenue (30d)',
-            value: `$${(stats.revenue || 0).toLocaleString()}`,
+            value: `$${formatCompact(stats.revenue || 0)}`,
             trend: '+12.5%', // Placeholder for now or calc from previous period
             icon: <DollarSign className="text-white" />,
             to: '/dashboard',
             color: 'bg-emerald-600',
             trendColor: 'text-emerald-600 bg-emerald-50'
+        },
+        {
+            title: 'Est. Payout (30d)',
+            value: `$${formatCompact(stats.payout || 0)}`,
+            trend: 'Pending',
+            icon: <DollarSign className="text-white" />,
+            to: '/dashboard',
+            color: 'bg-orange-600',
+            trendColor: 'text-orange-600 bg-orange-50'
         },
     ];
 
@@ -169,7 +190,7 @@ export default function Home() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 {cards.map((card, idx) => (
                     <Link
                         key={idx}
@@ -177,16 +198,16 @@ export default function Home() {
                         className="group block p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden"
                     >
                         <div className="flex justify-between items-start mb-6 relative z-10">
-                            <div className={`p-3.5 rounded-xl shadow-lg ${card.color} shadow-opacity-30`}>
+                            <div className={`p-3.5 rounded-xl shadow-lg ${card.color} shadow-opacity-30 flex-shrink-0`}>
                                 {card.icon}
                             </div>
-                            <div className={`px-2.5 py-1 text-xs font-bold rounded-full border flex items-center gap-1 ${card.trendColor} border-opacity-20`}>
-                                <TrendingUp size={12} /> {card.trend}
+                            <div className={`px-2 py-0.5 text-[10px] font-bold rounded-full border flex items-center gap-1 ${card.trendColor} border-opacity-20 whitespace-nowrap`}>
+                                <TrendingUp size={10} className="flex-shrink-0" /> {card.trend}
                             </div>
                         </div>
 
-                        <h3 className="text-3xl font-bold text-slate-900 mb-1 relative z-10">{card.value}</h3>
-                        <p className="text-sm font-medium text-slate-400 group-hover:text-slate-600 transition-colors relative z-10">{card.title}</p>
+                        <h3 className="text-3xl font-bold text-slate-900 mb-1 relative z-10 truncate" title={card.value}>{card.value}</h3>
+                        <p className="text-sm font-medium text-slate-400 group-hover:text-slate-600 transition-colors relative z-10 truncate" title={card.title}>{card.title}</p>
 
                         {/* Decorative background blob */}
                         <div className={`absolute -bottom-4 -right-4 w-24 h-24 rounded-full opacity-0 group-hover:opacity-10 transition-opacity duration-500 ${card.color}`}></div>

@@ -38,6 +38,18 @@ services:
       - app_network
     restart: always
 
+  dozzle:
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      DOZZLE_BASE: /monitor
+      DOZZLE_ENABLE_ACTIONS: true
+      DOZZLE_ENABLE_SHELL: true
+    networks:
+      - app_network
+    restart: always
+
 networks:
   app_network:
     driver: bridge

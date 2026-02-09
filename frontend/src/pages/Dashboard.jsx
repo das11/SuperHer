@@ -15,23 +15,32 @@ import JourneySankey from '../components/JourneySankey';
 
 // --- Components ---
 
+const formatCompact = (val) => {
+    if (val === undefined || val === null) return "0";
+    if (val >= 1000000) return (val / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (val >= 1000) return (val / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    // For small numbers, limit decimal places to 2 to prevent overflow
+    // and remove trailing zeros if integer
+    return Number(val).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+};
+
 const ScoreCard = ({ title, value, subtext, icon: Icon, delay }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay, duration: 0.5 }}
-        className="bg-white border border-gray-100 rounded-2xl p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+        className="bg-white border border-gray-100 rounded-2xl p-5 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
     >
-        <div className="flex justify-between items-start mb-4">
-            <div>
-                <p className="text-gray-500 text-sm font-medium mb-1">{title}</p>
-                <h3 className="text-3xl font-bold text-gray-900 tracking-tight">{value}</h3>
+        <div className="flex justify-between items-start mb-2">
+            <div className="min-w-0 pr-2">
+                <p className="text-gray-500 text-xs font-medium mb-1 uppercase tracking-wide truncate" title={title}>{title}</p>
+                <h3 className="text-2xl font-bold text-gray-900 tracking-tight truncate" title={value}>{value}</h3>
             </div>
-            <div className="p-3 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
-                <Icon className="w-6 h-6 text-indigo-500" />
+            <div className="p-2 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg border border-indigo-100 shrink-0">
+                <Icon className="w-4 h-4 text-indigo-500" />
             </div>
         </div>
-        {subtext && <p className="text-emerald-500 text-sm font-medium flex items-center gap-1"><TrendingUp className="w-3 h-3" /> {subtext}</p>}
+        {subtext && <p className="text-emerald-500 text-[10px] font-medium flex items-center gap-1 truncate" title={subtext}><TrendingUp className="w-3 h-3" /> {subtext}</p>}
     </motion.div>
 );
 
@@ -261,7 +270,7 @@ const Dashboard = () => {
                             <Users className="w-5 h-5 text-gray-400 group-hover:text-indigo-500 transition-colors" />
                             <div className="flex-1 min-w-0">
                                 <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Advertiser</label>
-                                <div className="text-sm font-medium text-gray-700 truncate">
+                                <div className="text-sm font-medium text-gray-700 truncate w-full">
                                     {selectedAdvertiser?.name || "Select Advertiser"}
                                 </div>
                             </div>
@@ -287,7 +296,7 @@ const Dashboard = () => {
                             <Megaphone className="w-5 h-5 text-gray-400 group-hover:text-indigo-500 transition-colors" />
                             <div className="flex-1 min-w-0">
                                 <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Campaign</label>
-                                <div className="text-sm font-medium text-gray-700 truncate">
+                                <div className="text-sm font-medium text-gray-700 truncate w-full">
                                     {campaigns.find(c => c.id == selectedCampaign)?.name || `All Campaigns (${campaigns.length})`}
                                 </div>
                             </div>
@@ -310,7 +319,7 @@ const Dashboard = () => {
                             <Filter className="w-5 h-5 text-gray-400 group-hover:text-indigo-500 transition-colors" />
                             <div className="flex-1 min-w-0">
                                 <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">Influencer</label>
-                                <div className="text-sm font-medium text-gray-700 truncate">
+                                <div className="text-sm font-medium text-gray-700 truncate w-full">
                                     {influencersFilter.find(i => i.id == selectedInfluencer)?.name || `All Influencers (${influencersFilter.length})`}
                                 </div>
                             </div>
@@ -335,25 +344,32 @@ const Dashboard = () => {
                 {!loading && overview && (
                     <>
                         {/* Scorecards */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                             <ScoreCard
                                 title="Total Clicks"
-                                value={overview?.total_clicks?.toLocaleString() || "0"}
+                                value={formatCompact(overview?.total_clicks || 0)}
                                 icon={MousePointer2}
                                 delay={0.1}
                             />
                             <ScoreCard
                                 title="Conversions"
-                                value={overview?.total_conversions?.toLocaleString() || "0"}
+                                value={formatCompact(overview?.total_conversions || 0)}
                                 subtext={`${overview?.conversion_rate || 0}% Rate`}
                                 icon={ShoppingCart}
                                 delay={0.2}
                             />
                             <ScoreCard
                                 title="Revenue"
-                                value={`$${overview?.total_revenue?.toLocaleString() || "0"}`}
+                                value={`$${formatCompact(overview?.total_revenue || 0)}`}
                                 icon={DollarSign}
                                 delay={0.3}
+                            />
+                            <ScoreCard
+                                title="Est. Payout"
+                                value={`$${formatCompact(overview?.total_payout || 0)}`}
+                                subtext="Total Estimated"
+                                icon={DollarSign}
+                                delay={0.35}
                             />
                             <ScoreCard
                                 title="AOV"
@@ -534,6 +550,7 @@ const Dashboard = () => {
                                             {activeTab === 'links' && <th className="pb-4 font-semibold text-right">Clicks</th>}
                                             <th className="pb-4 font-semibold text-right">Events</th>
                                             <th className="pb-4 font-semibold text-right">Purchases</th>
+                                            {(activeTab === 'campaigns' || activeTab === 'influencers') && <th className="pb-4 font-semibold text-right">Payout</th>}
                                             <th className="pb-4 font-semibold text-right pr-4">Revenue</th>
                                         </tr>
                                     </thead>
@@ -573,8 +590,13 @@ const Dashboard = () => {
                                                 <td className="py-4 text-right text-gray-600">
                                                     {(row.purchases || 0).toLocaleString()}
                                                 </td>
+                                                {(activeTab === 'campaigns' || activeTab === 'influencers') && (
+                                                    <td className="py-4 text-right text-gray-600">
+                                                        ${formatCompact(row.payout || 0)}
+                                                    </td>
+                                                )}
                                                 <td className="py-4 text-right pr-4 font-bold text-gray-900">
-                                                    ${(row.revenue || 0).toLocaleString()}
+                                                    ${formatCompact(row.revenue || 0)}
                                                 </td>
                                             </tr>
                                         ))}

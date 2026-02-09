@@ -24,6 +24,7 @@ class CampaignResponse(CampaignBase):
     advertiser_id: int
     created_at: datetime
     revenue: Optional[float] = 0.0
+    payout: Optional[float] = 0.0
     
     class Config:
         from_attributes = True

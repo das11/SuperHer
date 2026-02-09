@@ -2,12 +2,15 @@ from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Security
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.models.campaign import Campaign
+from app.models.influencer import Influencer, CampaignInfluencer
 from app.models.advertiser import Advertiser
 from app.models.user import User, UserRole
 from app.schemas.campaign import CampaignCreate, CampaignResponse, CampaignUpdate
+from app.schemas.influencer import InfluencerLinkResponse
 from app.core.deps import get_current_active_user
 
 router = APIRouter()
@@ -50,7 +53,7 @@ async def create_campaign(
     await db.refresh(new_campaign)
     return new_campaign
 
-from sqlalchemy import func
+from sqlalchemy import func, case, case
 from app.models.customer_event import CustomerEvent
 
 @router.get("/", response_model=List[CampaignResponse])
@@ -61,11 +64,32 @@ async def list_campaigns(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ) -> Any:
-    """List all campaigns with aggregated revenue. Scoped to current user's advertiser."""
+    """List all campaigns with aggregated revenue and estimated payout. Scoped."""
     
+    # Calculate payout based on revenue share model
+    # Join CustomerEvent -> CampaignInfluencer to get the rate/fee for that specific influencer-campaign pair
+    payout_calc = func.sum(
+        case(
+            (CampaignInfluencer.revenue_share_type == 'percentage', 
+             func.coalesce(CustomerEvent.revenue, 0) * func.coalesce(CampaignInfluencer.revenue_share_value, 0) / 100.0),
+            (CampaignInfluencer.revenue_share_type == 'flat', 
+             func.coalesce(CampaignInfluencer.revenue_share_value, 0)),
+            else_=0.0
+        )
+    ).label("payout")
+
     query = (
-        select(Campaign, func.coalesce(func.sum(CustomerEvent.revenue), 0.0).label("revenue"))
+        select(
+            Campaign, 
+            func.coalesce(func.sum(CustomerEvent.revenue), 0.0).label("revenue"),
+            func.coalesce(payout_calc, 0.0).label("payout")
+        )
         .outerjoin(CustomerEvent, CustomerEvent.campaign_id == Campaign.id)
+        .outerjoin(
+            CampaignInfluencer, 
+            (CampaignInfluencer.campaign_id == Campaign.id) & 
+            (CampaignInfluencer.influencer_id == CustomerEvent.influencer_id)
+        )
         .group_by(Campaign.id)
     )
     
@@ -81,11 +105,12 @@ async def list_campaigns(
     result = await db.execute(query.offset(skip).limit(limit))
     rows = result.all()
     
-    # Construct response with revenue attached
+    # Construct response with revenue and payout attached
     campaigns = []
     for row in rows:
         camp_dict = row.Campaign.__dict__.copy()
         camp_dict["revenue"] = row.revenue
+        camp_dict["payout"] = row.payout
         campaigns.append(camp_dict)
         
     return campaigns
@@ -96,16 +121,51 @@ async def get_campaign(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ) -> Any:
-    """Get a specific campaign. Scoped."""
-    result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
-    campaign = result.scalars().first()
-    if not campaign:
-        raise HTTPException(status_code=404, detail="Campaign not found")
+    """Get a specific campaign with aggregated revenue and payout. Scoped."""
+    
+    payout_calc = func.sum(
+        case(
+            (CampaignInfluencer.revenue_share_type == 'percentage', 
+             func.coalesce(CustomerEvent.revenue, 0) * func.coalesce(CampaignInfluencer.revenue_share_value, 0) / 100.0),
+            (CampaignInfluencer.revenue_share_type == 'flat', 
+             func.coalesce(CampaignInfluencer.revenue_share_value, 0)),
+            else_=0.0
+        )
+    ).label("payout")
 
+    query = (
+        select(
+            Campaign, 
+            func.coalesce(func.sum(CustomerEvent.revenue), 0.0).label("revenue"),
+            func.coalesce(payout_calc, 0.0).label("payout")
+        )
+        .outerjoin(CustomerEvent, CustomerEvent.campaign_id == Campaign.id)
+        .outerjoin(
+            CampaignInfluencer, 
+            (CampaignInfluencer.campaign_id == Campaign.id) & 
+            (CampaignInfluencer.influencer_id == CustomerEvent.influencer_id)
+        )
+        .where(Campaign.id == campaign_id)
+        .group_by(Campaign.id)
+    )
+
+    result = await db.execute(query)
+    row = result.first()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+        
+    campaign = row.Campaign
+    
     # Scoping Logic
     if current_user.role == UserRole.ADVERTISER:
         if campaign.advertiser_id != current_user.advertiser_id:
              raise HTTPException(status_code=404, detail="Campaign not found")
+
+    # Manually attach aggregated fields to the model instance for the schema
+    # (Since schema uses from_attributes=True, it will look for attributes on the object)
+    setattr(campaign, "revenue", row.revenue)
+    setattr(campaign, "payout", row.payout)
 
     return campaign
 
@@ -135,3 +195,40 @@ async def update_campaign(
     await db.commit()
     await db.refresh(campaign)
     return campaign
+
+@router.get("/{campaign_id}/influencers", response_model=List[InfluencerLinkResponse])
+async def list_campaign_influencers(
+    campaign_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+) -> Any:
+    """List influencers for a specific campaign with link details."""
+    # Validate campaign
+    result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
+    campaign = result.scalars().first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    if current_user.role == UserRole.ADVERTISER and campaign.advertiser_id != current_user.advertiser_id:
+             raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Fetch links
+    stmt = (
+        select(CampaignInfluencer)
+        .options(selectinload(CampaignInfluencer.influencer))
+        .where(CampaignInfluencer.campaign_id == campaign_id)
+    )
+    result = await db.execute(stmt)
+    links = result.scalars().all()
+    
+    # Flatten structure for response
+    return [
+        InfluencerLinkResponse(
+            id=link.influencer.id,
+            name=link.influencer.name,
+            email=link.influencer.email,
+            social_handle=link.influencer.social_handle,
+            revenue_share_value=link.revenue_share_value if link.revenue_share_value is not None else 0.0,
+            revenue_share_type=link.revenue_share_type if link.revenue_share_type is not None else 'percentage'
+        ) for link in links
+    ]

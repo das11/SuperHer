@@ -11,6 +11,14 @@ class CampaignSummary(BaseModel):
     class Config:
         from_attributes = True
 
+class CampaignLinkResponse(BaseModel):
+    campaign: CampaignSummary
+    revenue_share_value: Optional[float] = 0.0
+    revenue_share_type: Optional[str] = 'percentage'
+    
+    class Config:
+        from_attributes = True
+
 class InfluencerBase(BaseModel):
     name: str
     email: EmailStr
@@ -18,6 +26,8 @@ class InfluencerBase(BaseModel):
 
 class InfluencerCreate(InfluencerBase):
     campaign_id: Optional[int] = None
+    revenue_share_value: Optional[float] = 0.0
+    revenue_share_type: Optional[str] = 'percentage'
 
 class InfluencerUpdate(BaseModel):
     name: Optional[str] = None
@@ -27,7 +37,16 @@ class InfluencerUpdate(BaseModel):
 class InfluencerResponse(InfluencerBase):
     id: int
     created_at: datetime
-    campaigns: List[CampaignSummary] = []
+    # campaigns: List[CampaignSummary] = [] # Deprecated or kept for backward compat?
+    campaign_links: List[CampaignLinkResponse] = []
 
+    class Config:
+        from_attributes = True
+
+class InfluencerLinkResponse(InfluencerBase):
+    id: int
+    revenue_share_value: float
+    revenue_share_type: str
+    
     class Config:
         from_attributes = True

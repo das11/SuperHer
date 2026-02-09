@@ -383,3 +383,82 @@ Here is how the system actually processes a user interaction, step-by-step:
     *   **Result**: The Advertiser sees *only* their data (or an empty list if they have none), and sees *nothing* from others.
 
 ---
+
+## Annexure II - Email Service Implementation
+
+**Objective**: Enable the platform to send professional, automated transactional emails (Coupons, Tracking Links) to influencers, replacing manual copy-pasting.
+
+### 1. Infrastructure (AWS SES)
+We chose **AWS Simple Email Service (SES)** for its reliability and high deliverability.
+*   **Identity Verification**:
+    *   **Domain Level**: We verified `superher.in` mapping via Route53 CNAME records. This allows sending from any address (e.g., `noreply@superher.in`) without individual verification.
+    *   **Sandbox Mode**: Initially, we operated in SES Sandbox, requiring both Sender and Recipient to be verified. (Moved to Production access for unrestricted sending).
+*   **Security**: IAM User (`ses-mailer`) with restricted `ses:SendRawEmail` permissions, credentials stored in `.env`.
+
+### 2. Backend Architecture (`app/services/email.py`)
+
+#### A. The Challenge: Image Blocking
+*   **Problem**: Most modern email clients (Gmail, Outlook) block external images and Base64 Data URIs (`<img src="data:image/png;base64...">`) by default for privacy/security.
+*   **Solution**: **MIME Multipart with Content-ID (CID)**.
+    *   We refactored the email engine to construct a `multipart/related` MIME message.
+    *   **The Logo**: Instead of a link, the logo is *attached* to the email as a binary part.
+    *   **The Reference**: The HTML references it via `<img src="cid:logo">`.
+    *   **Result**: The image renders instantly as an "internal" attachment, bypassing the blocker.
+
+#### B. Template Engine
+*   **Design**: A "Card-Based" layout using pure HTML5/CSS (tables and inline styles) for maximum compatibility.
+*   **Responsiveness**: A mobile-first container (`max-width: 600px`) that scales down on phones.
+*   **Methods**:
+    *   `send_coupons()`: Iterates through the list and generates a card for each code.
+    *   `send_links()`: Generates a card with the Short URL and a Call-to-Action button.
+
+### 3. Frontend Integration (`EmailSuccessModal.jsx`)
+
+*   **UX Upgrade**: We replaced standard browser `alert()` boxes with a custom React Modal.
+*   **State Management**:
+    *   The API returns a detailed breakdown: `{ emails_sent: 5, emails_failed: 1 }`.
+    *   The Modal dynamically styles its icon (Green Check vs Red Alert) based on the result.
+*   **Animation**: Used `framer-motion` for a smooth "Spring" entrance/exit, adding a premium feel to the notification.
+
+---
+
+## Phase 6: Revenue Share & Payouts (The Monetization Layer)
+
+**Objective**: Enable advertisers to compensate influencers based on specific performance models (Percentage or Flat Fee) and calculate "Estimated Payout" dynamically.
+
+### 1. Database Schema (`CampaignInfluencer`)
+
+We upgraded the simple relationship table to a full SQLAlchemy Model to store per-link configuration.
+
+*   **Migration**: `alembic revision -m "add_revenue_share_columns"`
+*   **New Columns**:
+    *   `revenue_share_type`: Enum (`percentage` | `flat`).
+    *   `revenue_share_value`: Float (e.g., `15.0`).
+*   **Why**: This allows granular control. One influencer can get 10% while another gets a $50 flat fee on the *same* campaign.
+
+### 2. Backend Logic (`StatsService`)
+
+*   **Dynamic Payout Calculation**:
+    *   We modified the aggregation queries in `stats.py` to calculate payout *on the fly* during reporting.
+    *   **The Math**:
+        ```sql
+        SUM(
+            CASE 
+                WHEN share_type = 'percentage' THEN (revenue * share_value / 100)
+                WHEN share_type = 'flat' THEN (conversions * share_value)
+                ELSE 0 
+            END
+        )
+        ```
+    *   **Handling Nulls**: Heavily used `COALESCE(val, 0)` to ensure that missing config doesn't break the entire dashboard report.
+
+### 3. Frontend Integration
+
+*   **Dashboard Updates**:
+    *   **Scorecards**: Added "Est. Payout" card to both *Home* and *Performance* dashboards.
+    *   **Columns**: Added a dedicated `Payout` column to the breakdown tables for Campaigns and Influencers.
+*   **Visual Refinements**:
+    *   **Smart Formatting**: Implemented a `formatCompact` utility to show large numbers as `1.5M` or `10K`, while keeping small currency values precise (`$123.45`).
+    *   **Layout**: Updated the grid to 5 columns to fit the new metric without cramping the UI.
+
+

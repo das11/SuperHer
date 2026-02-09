@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api/services';
-import { Megaphone, Calendar, TrendingUp, Plus, DollarSign, Clock, CheckCircle, AlertCircle, Play } from 'lucide-react';
+import { Megaphone, Calendar, TrendingUp, Plus, DollarSign, Clock, CheckCircle, AlertCircle, Play, Settings } from 'lucide-react';
 
 export default function Campaigns() {
+    const navigate = useNavigate();
     const [campaigns, setCampaigns] = useState([]);
     const [advertisers, setAdvertisers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -108,10 +110,19 @@ export default function Campaigns() {
                                             {c.status === 'active' ? <CheckCircle size={12} /> : <Clock size={12} />}
                                             {c.status.toUpperCase()}
                                         </span>
+
+                                        <button
+                                            onClick={() => navigate(`/campaigns/${c.id}/settings`)}
+                                            className="p-1.5 bg-slate-50 text-slate-600 rounded-full hover:bg-indigo-50 hover:text-indigo-600 transition-all shadow-sm border border-slate-200 ml-2"
+                                            title="Campaign Settings"
+                                        >
+                                            <Settings size={14} />
+                                        </button>
+
                                         {c.status === 'draft' && (
                                             <button
                                                 onClick={() => handleStatusUpdate(c.id, 'active')}
-                                                className="p-1.5 bg-emerald-50 text-emerald-600 rounded-full hover:bg-emerald-100 hover:scale-105 transition-all shadow-sm border border-emerald-100"
+                                                className="p-1.5 bg-emerald-50 text-emerald-600 rounded-full hover:bg-emerald-100 hover:scale-105 transition-all shadow-sm border border-emerald-100 ml-1"
                                                 title="Launch Campaign"
                                             >
                                                 <Play size={14} fill="currentColor" />
@@ -120,7 +131,7 @@ export default function Campaigns() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-6 pt-5 border-t border-slate-100 relative z-10">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-5 border-t border-slate-100 relative z-10">
                                     <div>
                                         <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><DollarSign size={12} /> Budget</p>
                                         <p className="text-sm font-bold text-slate-900">${c.budget?.toLocaleString()}</p>
@@ -128,13 +139,19 @@ export default function Campaigns() {
                                     <div>
                                         <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><Calendar size={12} /> Timeline</p>
                                         <p className="text-sm font-medium text-slate-700">
-                                            {c.start_date || 'TBD'} &mdash; {c.end_date || 'TBD'}
+                                            {c.start_date || 'TBD'}
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><TrendingUp size={12} /> Total Revenue</p>
+                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><TrendingUp size={12} /> Revenue</p>
                                         <p className="text-sm font-bold text-emerald-600">
                                             ${(c.revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><DollarSign size={12} /> Payout</p>
+                                        <p className="text-sm font-bold text-slate-600">
+                                            ${(c.payout || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </p>
                                     </div>
                                 </div>

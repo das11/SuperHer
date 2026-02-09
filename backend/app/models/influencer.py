@@ -1,15 +1,19 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Table
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Table, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.core.database import Base
 
-# Association Table for Many-to-Many
-campaign_influencer = Table(
-    'campaign_influencers',
-    Base.metadata,
-    Column('campaign_id', Integer, ForeignKey('campaigns.id'), primary_key=True),
-    Column('influencer_id', Integer, ForeignKey('influencers.id'), primary_key=True)
-)
+class CampaignInfluencer(Base):
+    __tablename__ = 'campaign_influencers'
+    
+    campaign_id = Column(Integer, ForeignKey('campaigns.id'), primary_key=True)
+    influencer_id = Column(Integer, ForeignKey('influencers.id'), primary_key=True)
+    
+    revenue_share_value = Column(Float, default=0.0)
+    revenue_share_type = Column(String(20), default='percentage') # 'percentage' or 'flat'
+
+    campaign = relationship("Campaign", back_populates="influencer_links")
+    influencer = relationship("Influencer", back_populates="campaign_links")
 
 class Influencer(Base):
     __tablename__ = "influencers"
@@ -21,7 +25,12 @@ class Influencer(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    campaigns = relationship("Campaign", secondary=campaign_influencer, back_populates="influencers")
+    campaign_links = relationship("CampaignInfluencer", back_populates="influencer", cascade="all, delete-orphan")
+    
+    @property
+    def campaigns(self):
+        return [link.campaign for link in self.campaign_links]
+    
     coupons = relationship("Coupon", back_populates="influencer")
     tracking_links = relationship("TrackingLink", back_populates="influencer")
     user = relationship("User", back_populates="influencer", uselist=False)

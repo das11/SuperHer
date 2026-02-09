@@ -107,7 +107,7 @@ export default function Influencers() {
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xl border-4 border-white shadow-sm ring-1 ring-slate-100 relative group-hover:scale-105 transition-transform duration-300">
                                             {inf.name.charAt(0)}
-                                            {inf.campaigns?.length > 0 && (
+                                            {inf.campaign_links?.length > 0 && (
                                                 <span className="absolute bottom-0 right-0 block h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
                                             )}
                                         </div>
@@ -129,11 +129,11 @@ export default function Influencers() {
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
                                             Active Campaigns
                                         </p>
-                                        {inf.campaigns && inf.campaigns.length > 0 ? (
+                                        {inf.campaign_links && inf.campaign_links.length > 0 ? (
                                             <div className="flex flex-wrap gap-2">
-                                                {inf.campaigns.map(c => (
-                                                    <span key={c.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-50 text-purple-700 text-xs font-bold border border-purple-100">
-                                                        {c.name}
+                                                {inf.campaign_links.map(link => (
+                                                    <span key={link.campaign.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-50 text-purple-700 text-xs font-bold border border-purple-100">
+                                                        {link.campaign.name}
                                                     </span>
                                                 ))}
                                             </div>

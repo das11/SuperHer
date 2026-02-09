@@ -106,7 +106,7 @@ class EmailService:
         # Create the root message - use 'related' for inline images
         msg = MIMEMultipart('related')
         msg['Subject'] = subject
-        msg['From'] = settings.SENDER_EMAIL
+        msg['From'] = settings.SENDER_EMAIL or "noreply@superher.com"
         msg['To'] = to_email
 
         # Create alternative part for Text vs HTML

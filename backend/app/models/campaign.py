@@ -18,6 +18,11 @@ class Campaign(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     advertiser = relationship("Advertiser", back_populates="campaigns")
-    influencers = relationship("Influencer", secondary="campaign_influencers", back_populates="campaigns")
+    
+    influencer_links = relationship("CampaignInfluencer", back_populates="campaign", cascade="all, delete-orphan")
+    
+    @property
+    def influencers(self):
+        return [link.influencer for link in self.influencer_links]
     coupons = relationship("Coupon", back_populates="campaign", cascade="all, delete-orphan")
     tracking_links = relationship("TrackingLink", back_populates="campaign", cascade="all, delete-orphan")

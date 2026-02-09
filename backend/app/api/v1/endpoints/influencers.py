@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
 
 from app.core.database import get_db
-from app.models.influencer import Influencer
+from app.models.influencer import Influencer, CampaignInfluencer
 from app.models.campaign import Campaign
 from app.models.tracking_link import TrackingLink
 from app.models.user import User, UserRole
@@ -20,6 +20,8 @@ router = APIRouter()
 # --- Schemas for Actions ---
 class AssignCampaignRequest(BaseModel):
     campaign_id: int
+    revenue_share_value: Optional[float] = 0.0
+    revenue_share_type: Optional[str] = 'percentage'
 
 # --- CRUD ---
 
@@ -51,7 +53,9 @@ async def create_influencer(
         if current_user.role == UserRole.ADVERTISER and campaign.advertiser_id != current_user.advertiser_id:
              raise HTTPException(status_code=403, detail="Not authorized to assign to this campaign")
              
-        new_influencer.campaigns.append(campaign)
+        # new_influencer.campaigns.append(campaign) # OLD
+        link = CampaignInfluencer(campaign=campaign)
+        new_influencer.campaign_links.append(link)
 
     db.add(new_influencer)
     try:
@@ -66,7 +70,7 @@ async def create_influencer(
     
     # Safe return for Pydantic
     if not influencer.campaign_id:
-        attributes.set_committed_value(new_influencer, "campaigns", [])
+        attributes.set_committed_value(new_influencer, "campaign_links", [])
     
     return new_influencer
 
@@ -120,7 +124,9 @@ async def create_influencers_bulk(
                      if current_user.role == UserRole.ADVERTISER and campaign.advertiser_id != current_user.advertiser_id:
                          pass # Skip linking if unauthorized
                      else:
-                         new_inf.campaigns.append(campaign)
+                         # new_inf.campaigns.append(campaign)
+                         link = CampaignInfluencer(campaign=campaign)
+                         new_inf.campaign_links.append(link)
 
             db.add(new_inf)
             await db.commit() # Commit per item to allow partial success
@@ -145,7 +151,7 @@ async def list_influencers(
     current_user: User = Depends(get_current_active_user)
 ) -> Any:
     """List all influencers. Scoped by Advertiser."""
-    stmt = select(Influencer).options(selectinload(Influencer.campaigns))
+    stmt = select(Influencer).options(selectinload(Influencer.campaign_links).selectinload(CampaignInfluencer.campaign))
     
     # Scoping Logic & Filtering
     
@@ -167,7 +173,7 @@ async def list_influencers(
          # Use efficient EXISTS (any) clauses
          stmt = stmt.where(
             or_(
-                Influencer.campaigns.any(Campaign.advertiser_id == filter_adv_id),
+                Influencer.campaign_links.any(CampaignInfluencer.campaign.has(Campaign.advertiser_id == filter_adv_id)),
                 Influencer.tracking_links.any(TrackingLink.campaign.has(Campaign.advertiser_id == filter_adv_id))
             )
          )
@@ -193,7 +199,7 @@ async def get_influencer(
     
     result = await db.execute(
         select(Influencer)
-        .options(selectinload(Influencer.campaigns))
+        .options(selectinload(Influencer.campaign_links).selectinload(CampaignInfluencer.campaign))
         .where(Influencer.id == influencer_id)
     )
     inf = result.scalars().first()
@@ -211,10 +217,10 @@ async def assign_influencer_to_campaign(
     current_user: User = Depends(get_current_active_user)
 ) -> Any:
     """Assign an influencer to a campaign. Scoped."""
-    # 1. Fetch Influencer with campaigns loaded
+    # 1. Fetch Influencer with campaign_links loaded
     result = await db.execute(
         select(Influencer)
-        .options(selectinload(Influencer.campaigns))
+        .options(selectinload(Influencer.campaign_links).selectinload(CampaignInfluencer.campaign))
         .where(Influencer.id == influencer_id)
     )
     inf = result.scalars().first()
@@ -232,11 +238,33 @@ async def assign_influencer_to_campaign(
         if campaign.advertiser_id != current_user.advertiser_id:
              raise HTTPException(status_code=403, detail="Not authorized to modify this campaign")
 
-    # 3. Assign (Append to list)
+    # 3. Assign or Update Link
     # Check if already assigned
-    if campaign not in inf.campaigns:
-        inf.campaigns.append(campaign)
-        await db.commit()
-        await db.refresh(inf)
+    existing_link = next((link for link in inf.campaign_links if link.campaign_id == campaign.id), None)
+    
+    if existing_link:
+        # Update existing link
+        if request.revenue_share_value is not None:
+            existing_link.revenue_share_value = request.revenue_share_value
+        if request.revenue_share_type is not None:
+            existing_link.revenue_share_type = request.revenue_share_type
+    else:
+        # Create new link
+        new_link = CampaignInfluencer(
+            campaign=campaign,
+            revenue_share_value=request.revenue_share_value or 0.0,
+            revenue_share_type=request.revenue_share_type or 'percentage'
+        )
+        inf.campaign_links.append(new_link)
+
+    await db.commit()
+    
+    # Re-fetch with all option loads to avoid MissingGreenlet error on response model validation
+    result = await db.execute(
+        select(Influencer)
+        .options(selectinload(Influencer.campaign_links).selectinload(CampaignInfluencer.campaign))
+        .where(Influencer.id == influencer_id)
+    )
+    inf = result.scalars().first()
     
     return inf

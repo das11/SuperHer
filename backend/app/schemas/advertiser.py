@@ -6,6 +6,7 @@ class AdvertiserBase(BaseModel):
     name: str
     contact_email: EmailStr
     is_active: Optional[bool] = True
+    currency: Optional[str] = 'USD'  # 'USD' or 'INR'
 
 class AdvertiserCreate(AdvertiserBase):
     pass
@@ -14,6 +15,7 @@ class AdvertiserUpdate(BaseModel):
     name: Optional[str] = None
     contact_email: Optional[EmailStr] = None
     is_active: Optional[bool] = None
+    currency: Optional[str] = None
 
 class APIKeyCreate(BaseModel):
     name: Optional[str] = None

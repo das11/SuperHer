@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { CurrencyProvider } from './context/CurrencyContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -19,26 +20,28 @@ import './App.css';
 function App() {
   return (
     <AuthProvider>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+      <CurrencyProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
 
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/advertisers" element={<Advertisers />} />
-            <Route path="/campaigns" element={<Campaigns />} />
-            <Route path="/campaigns/:id/settings" element={<CampaignSettings />} />
-            <Route path="/influencers" element={<Influencers />} />
-            <Route path="/trackers" element={<Trackers />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/integration-docs" element={<IntegrationDocs />} />
-            <Route path="/settings" element={<Settings />} />
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/advertisers" element={<Advertisers />} />
+              <Route path="/campaigns" element={<Campaigns />} />
+              <Route path="/campaigns/:id/settings" element={<CampaignSettings />} />
+              <Route path="/influencers" element={<Influencers />} />
+              <Route path="/trackers" element={<Trackers />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/integration-docs" element={<IntegrationDocs />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
+        </Routes>
+      </CurrencyProvider>
     </AuthProvider>
   );
 }

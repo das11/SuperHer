@@ -8,7 +8,8 @@ import "react-datepicker/dist/react-datepicker.css";
 import { format, subDays } from 'date-fns';
 import { statsApi } from '../api/stats';
 import { api } from '../api/services';
-import { Download, TrendingUp, MousePointer2, ShoppingCart, DollarSign, Filter, Users, Megaphone } from 'lucide-react';
+import { Download, TrendingUp, MousePointer2, ShoppingCart, Coins, Filter, Users, Megaphone } from 'lucide-react';
+import { useCurrency } from '../context/CurrencyContext';
 
 // --- Components ---
 import JourneySankey from '../components/JourneySankey';
@@ -64,6 +65,9 @@ const CustomTooltip = ({ active, payload, label }) => {
 // --- Main Page ---
 
 const Dashboard = () => {
+    // Currency
+    const { getSymbol, formatCurrency } = useCurrency();
+
     // State
     const [dateRange, setDateRange] = useState([subDays(new Date(), 30), new Date()]);
     const [startDate, endDate] = dateRange;
@@ -360,20 +364,20 @@ const Dashboard = () => {
                             />
                             <ScoreCard
                                 title="Revenue"
-                                value={`$${formatCompact(overview?.total_revenue || 0)}`}
-                                icon={DollarSign}
+                                value={`${getSymbol()}${formatCompact(overview?.total_revenue || 0)}`}
+                                icon={Coins}
                                 delay={0.3}
                             />
                             <ScoreCard
                                 title="Est. Payout"
-                                value={`$${formatCompact(overview?.total_payout || 0)}`}
+                                value={`${getSymbol()}${formatCompact(overview?.total_payout || 0)}`}
                                 subtext="Total Estimated"
-                                icon={DollarSign}
+                                icon={Coins}
                                 delay={0.35}
                             />
                             <ScoreCard
                                 title="AOV"
-                                value={`$${aov}`}
+                                value={`${getSymbol()}${aov}`}
                                 subtext="Avg Order Value"
                                 icon={TrendingUp}
                                 delay={0.4}
@@ -592,11 +596,11 @@ const Dashboard = () => {
                                                 </td>
                                                 {(activeTab === 'campaigns' || activeTab === 'influencers') && (
                                                     <td className="py-4 text-right text-gray-600">
-                                                        ${formatCompact(row.payout || 0)}
+                                                        {getSymbol()}{formatCompact(row.payout || 0)}
                                                     </td>
                                                 )}
                                                 <td className="py-4 text-right pr-4 font-bold text-gray-900">
-                                                    ${formatCompact(row.revenue || 0)}
+                                                    {getSymbol()}{formatCompact(row.revenue || 0)}
                                                 </td>
                                             </tr>
                                         ))}

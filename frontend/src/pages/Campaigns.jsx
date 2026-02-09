@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/services';
-import { Megaphone, Calendar, TrendingUp, Plus, DollarSign, Clock, CheckCircle, AlertCircle, Play, Settings } from 'lucide-react';
+import { useCurrency } from '../context/CurrencyContext';
+import { Megaphone, Calendar, TrendingUp, Plus, Coins, Clock, CheckCircle, AlertCircle, Play, Settings } from 'lucide-react';
 
 export default function Campaigns() {
     const navigate = useNavigate();
+    const { formatCurrency, getSymbol } = useCurrency();
     const [campaigns, setCampaigns] = useState([]);
     const [advertisers, setAdvertisers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -133,8 +135,8 @@ export default function Campaigns() {
 
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-5 border-t border-slate-100 relative z-10">
                                     <div>
-                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><DollarSign size={12} /> Budget</p>
-                                        <p className="text-sm font-bold text-slate-900">${c.budget?.toLocaleString()}</p>
+                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><Coins size={12} /> Budget</p>
+                                        <p className="text-sm font-bold text-slate-900">{formatCurrency(c.budget)}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><Calendar size={12} /> Timeline</p>
@@ -145,13 +147,13 @@ export default function Campaigns() {
                                     <div>
                                         <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><TrendingUp size={12} /> Revenue</p>
                                         <p className="text-sm font-bold text-emerald-600">
-                                            ${(c.revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            {formatCurrency(c.revenue || 0)}
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><DollarSign size={12} /> Payout</p>
+                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><Coins size={12} /> Payout</p>
                                         <p className="text-sm font-bold text-slate-600">
-                                            ${(c.payout || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            {formatCurrency(c.payout || 0)}
                                         </p>
                                     </div>
                                 </div>
@@ -198,7 +200,7 @@ export default function Campaigns() {
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Total Budget</label>
                                 <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-serif italic text-lg">$</span>
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-serif italic text-lg">{getSymbol()}</span>
                                     <input
                                         className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-medium placeholder:text-slate-400"
                                         placeholder="0.00"

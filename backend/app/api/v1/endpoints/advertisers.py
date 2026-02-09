@@ -92,6 +92,39 @@ async def get_advertiser(
     
     return advertiser
 
+@router.patch("/{advertiser_id}", response_model=AdvertiserResponse)
+async def update_advertiser(
+    advertiser_id: int,
+    advertiser_update: AdvertiserUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+) -> Any:
+    """Update an advertiser's details (e.g., currency)."""
+    # Authorization: Only self or SuperRoot
+    if current_user.role == UserRole.ADVERTISER:
+        if advertiser_id != current_user.advertiser_id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+
+    result = await db.execute(
+        select(Advertiser)
+        .options(selectinload(Advertiser.api_keys))
+        .where(Advertiser.id == advertiser_id)
+    )
+    advertiser = result.scalars().first()
+    if not advertiser:
+        raise HTTPException(status_code=404, detail="Advertiser not found")
+
+    # Apply updates
+    update_data = advertiser_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(advertiser, field, value)
+
+    db.add(advertiser)
+    await db.commit()
+    await db.refresh(advertiser)
+    
+    return advertiser
+
 # --- API Key Management ---
 
 @router.post("/{advertiser_id}/api-key", response_model=dict)

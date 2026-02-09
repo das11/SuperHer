@@ -6,6 +6,7 @@ import { Shield, User, Users, Settings as SettingsIcon } from 'lucide-react';
 
 // Components
 import ApiKeyManager from '../components/settings/ApiKeyManager';
+import CurrencySettings from '../components/settings/CurrencySettings';
 
 export default function Settings() {
     const { user } = useAuth();
@@ -37,9 +38,9 @@ export default function Settings() {
 
     const tabs = [
         { id: 'keys', label: 'API Keys', icon: Shield },
+        { id: 'general', label: 'General', icon: SettingsIcon },
         { id: 'profile', label: 'Profile', icon: User, disabled: true }, // Placeholder
         { id: 'team', label: 'Team', icon: Users, disabled: true },    // Placeholder
-        { id: 'general', label: 'General', icon: SettingsIcon, disabled: true }, // Placeholder
     ];
 
     if (loading) {
@@ -65,8 +66,8 @@ export default function Settings() {
                             onClick={() => !tab.disabled && setActiveTab(tab.id)}
                             disabled={tab.disabled}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
-                                    ? 'bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-100'
-                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                ? 'bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-100'
+                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                 } ${tab.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <tab.icon size={18} className={activeTab === tab.id ? 'text-blue-500' : 'text-slate-400'} />
@@ -93,6 +94,10 @@ export default function Settings() {
                         )}
 
                         {/* Valid placeholders for future expansion */}
+                        {activeTab === 'general' && (
+                            <CurrencySettings />
+                        )}
+
                         {activeTab === 'profile' && (
                             <div className="bg-white p-12 rounded-xl border border-dashed border-slate-300 text-center text-slate-400">
                                 Profile settings coming soon.

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
     LayoutDashboard, ArrowUpRight, Target, Zap, Users, Activity,
-    TrendingUp, DollarSign, Plus, BookOpen, Settings, BarChart3,
+    TrendingUp, Coins, Plus, BookOpen, Settings, BarChart3,
     ArrowRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -14,6 +14,7 @@ import { statsApi } from '../api/stats';
 import { subDays } from 'date-fns';
 
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 const formatCompact = (val) => {
     if (val === undefined || val === null) return "0";
@@ -25,6 +26,7 @@ const formatCompact = (val) => {
 
 export default function Home() {
     const { user } = useAuth();
+    const { getSymbol, formatCurrency } = useCurrency();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         advertisers: 0,
@@ -149,18 +151,18 @@ export default function Home() {
         },
         {
             title: 'Total Revenue (30d)',
-            value: `$${formatCompact(stats.revenue || 0)}`,
+            value: `${getSymbol()}${formatCompact(stats.revenue || 0)}`,
             trend: '+12.5%', // Placeholder for now or calc from previous period
-            icon: <DollarSign className="text-white" />,
+            icon: <Coins className="text-white" />,
             to: '/dashboard',
             color: 'bg-emerald-600',
             trendColor: 'text-emerald-600 bg-emerald-50'
         },
         {
             title: 'Est. Payout (30d)',
-            value: `$${formatCompact(stats.payout || 0)}`,
+            value: `${getSymbol()}${formatCompact(stats.payout || 0)}`,
             trend: 'Pending',
-            icon: <DollarSign className="text-white" />,
+            icon: <Coins className="text-white" />,
             to: '/dashboard',
             color: 'bg-orange-600',
             trendColor: 'text-orange-600 bg-orange-50'

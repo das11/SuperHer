@@ -10,6 +10,7 @@ class Advertiser(Base):
     name = Column(String(100), index=True, nullable=False)
     contact_email = Column(String(100), unique=True, index=True, nullable=False)
     is_active = Column(Boolean, default=True)
+    currency = Column(String(3), default='USD')  # 'USD' or 'INR'
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships

@@ -5,6 +5,7 @@ export const api = {
         list: () => client.get('/advertisers/'),
         create: (data) => client.post('/advertisers/', data),
         get: (id) => client.get(`/advertisers/${id}`),
+        update: (id, data) => client.patch(`/advertisers/${id}`, data),
         generateKey: (id, name) => client.post(`/advertisers/${id}/api-key`, { name }),
         deleteKey: (advertiserId, keyId) => client.delete(`/advertisers/${advertiserId}/api-key/${keyId}`),
         delete: (id) => client.delete(`/advertisers/${id}`),

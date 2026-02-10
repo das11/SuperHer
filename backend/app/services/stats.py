@@ -41,7 +41,7 @@ class StatsService:
             if advertiser_id:
                 clicks_stmt = clicks_stmt.where(Campaign.advertiser_id == advertiser_id)
             
-            # Apply filters to ClickEvent (Link via TrackingLink)
+            # Apply filters to ClickEvent
             if start_date:
                 clicks_stmt = clicks_stmt.where(ClickEvent.timestamp >= start_date)
             if end_date:
@@ -72,8 +72,6 @@ class StatsService:
                 ).label("total_payout")
             )
             
-            # Join CampaignInfluencer to get revenue share details
-            # We need a left join because not all events will have a corresponding influencer share setup
             base_query = base_query.outerjoin(
                 CampaignInfluencer, 
                 (CampaignInfluencer.campaign_id == CustomerEvent.campaign_id) & 
@@ -88,24 +86,65 @@ class StatsService:
             result = await db.execute(base_query)
             row = result.one()
             
+            total_events = row.total_events or 0
             total_conversions = row.total_conversions or 0
             total_revenue = row.total_revenue or 0.0
+            total_payout = row.total_payout or 0.0
             
-            # Calc Rate
+            # 3. New Metrics Calculations
+            
+            # A. Campaign Value (Total Budget)
+            # Logic: Sum budget of active campaigns in scope
+            budget_stmt = select(func.sum(Campaign.budget)).where(Campaign.status == 'active')
+            if advertiser_id:
+                budget_stmt = budget_stmt.where(Campaign.advertiser_id == advertiser_id)
+            if campaign_id:
+                budget_stmt = budget_stmt.where(Campaign.id == campaign_id)
+            
+            budget_res = await db.execute(budget_stmt)
+            campaign_value = budget_res.scalar() or 0.0
+
+            # B. Total Influencers (Count)
+            if influencer_id:
+                total_influencers = 1
+            else:
+                inf_stmt = select(func.count(func.distinct(CampaignInfluencer.influencer_id)))
+                inf_stmt = inf_stmt.join(Campaign, CampaignInfluencer.campaign_id == Campaign.id)
+                if advertiser_id:
+                    inf_stmt = inf_stmt.where(Campaign.advertiser_id == advertiser_id)
+                if campaign_id:
+                    inf_stmt = inf_stmt.where(CampaignInfluencer.campaign_id == campaign_id)
+                
+                inf_res = await db.execute(inf_stmt)
+                total_influencers = inf_res.scalar() or 0
+
+            # C. RoII (Return on Influencer Investment)
+            # RoII = ((Revenue - Campaign Value) / Campaign Value) * 100
+            # Campaign Value = Total Active Budget
+            if campaign_value > 0:
+                roii = ((total_revenue - campaign_value) / campaign_value) * 100
+            else:
+                roii = 0.0 if total_revenue == 0 else 100.0 # Infinite/High return if budget is 0 but revenue exists
+
+            # Calc Conversion Rate
             conv_rate = (total_conversions / total_clicks * 100) if total_clicks > 0 else 0.0
 
             return {
-                "total_clicks": total_clicks,
-                "total_conversions": total_conversions,
+                "campaign_value": campaign_value,
                 "total_revenue": total_revenue,
-                "total_payout": row.total_payout or 0.0,
-                "conversion_rate": round(conv_rate, 2)
+                "roii": round(roii, 2),
+                "total_payout": total_payout,
+                "conversion_rate": round(conv_rate, 2),
+                "total_influencers": total_influencers,
+                "total_clicks": total_clicks,
+                "total_events": total_events,
+                "total_conversions": total_conversions
             }
         except Exception as e:
             import traceback
             print(traceback.format_exc())
             from fastapi import HTTPException
-            raise HTTPException(status_code=500, detail=f"Stats Error: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Stats Error: {e}")
 
     @staticmethod
     async def get_chart_data(

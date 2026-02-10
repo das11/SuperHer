@@ -8,7 +8,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { format, subDays } from 'date-fns';
 import { statsApi } from '../api/stats';
 import { api } from '../api/services';
-import { Download, TrendingUp, MousePointer2, ShoppingCart, Coins, Filter, Users, Megaphone } from 'lucide-react';
+import { Download, TrendingUp, MousePointer2, ShoppingCart, Coins, Filter, Users, Megaphone, Target, Activity, Percent } from 'lucide-react';
 import { useCurrency } from '../context/CurrencyContext';
 
 // --- Components ---
@@ -25,23 +25,31 @@ const formatCompact = (val) => {
     return Number(val).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 };
 
-const ScoreCard = ({ title, value, subtext, icon: Icon, delay }) => (
+const ScoreCard = ({ title, value, subtext, icon: Icon, delay, variant = 'primary' }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay, duration: 0.5 }}
-        className="bg-white border border-gray-100 rounded-2xl p-5 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+        className={`${variant === 'primary'
+            ? 'bg-white border border-gray-100 shadow-lg hover:shadow-xl hover:-translate-y-1 p-5 rounded-2xl'
+            : 'bg-white/60 border border-indigo-200 hover:bg-white hover:border-indigo-300 hover:shadow-sm p-3 rounded-xl'
+            } transition-all duration-300 overflow-hidden group`}
     >
-        <div className="flex justify-between items-start mb-2">
+        <div className={`flex justify-between items-start ${variant === 'primary' ? 'mb-2' : 'mb-0'}`}>
             <div className="min-w-0 pr-2">
-                <p className="text-gray-500 text-xs font-medium mb-1 uppercase tracking-wide truncate" title={title}>{title}</p>
-                <h3 className="text-2xl font-bold text-gray-900 tracking-tight truncate" title={value}>{value}</h3>
+                <p className={`${variant === 'primary' ? 'text-gray-500 font-medium text-xs mb-1' : 'text-gray-400 font-medium text-[10px] mb-0.5'} uppercase tracking-wide truncate`} title={title}>{title}</p>
+                <h3 className={`${variant === 'primary' ? 'text-2xl font-bold' : 'text-lg font-bold'} text-gray-900 tracking-tight truncate`} title={value}>{value}</h3>
             </div>
-            <div className="p-2 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg border border-indigo-100 shrink-0">
-                <Icon className="w-4 h-4 text-indigo-500" />
+            <div className={`rounded-lg shrink-0 ${variant === 'primary'
+                ? 'bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 p-2'
+                : 'bg-transparent text-gray-400 group-hover:text-indigo-500 p-1'
+                }`}>
+                <Icon className={`${variant === 'primary' ? 'w-4 h-4 text-indigo-500' : 'w-4 h-4'}`} />
             </div>
         </div>
-        {subtext && <p className="text-emerald-500 text-[10px] font-medium flex items-center gap-1 truncate" title={subtext}><TrendingUp className="w-3 h-3" /> {subtext}</p>}
+        {subtext && <p className={`${variant === 'primary' ? 'text-emerald-500 mt-0' : 'text-gray-400 group-hover:text-emerald-500 mt-0.5'} text-[10px] font-medium flex items-center gap-1 truncate transition-colors`} title={subtext}>
+            {variant === 'primary' && <TrendingUp className="w-3 h-3" />} {subtext}
+        </p>}
     </motion.div>
 );
 
@@ -348,24 +356,26 @@ const Dashboard = () => {
                 {!loading && overview && (
                     <>
                         {/* Scorecards */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                        {/* Primary Row: Financials */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-2">
                             <ScoreCard
-                                title="Total Clicks"
-                                value={formatCompact(overview?.total_clicks || 0)}
-                                icon={MousePointer2}
+                                title="Campaign Value"
+                                value={`${getSymbol()}${formatCompact(overview?.campaign_value || 0)}`}
+                                subtext="Active Budget"
+                                icon={Target}
                                 delay={0.1}
-                            />
-                            <ScoreCard
-                                title="Conversions"
-                                value={formatCompact(overview?.total_conversions || 0)}
-                                subtext={`${overview?.conversion_rate || 0}% Rate`}
-                                icon={ShoppingCart}
-                                delay={0.2}
                             />
                             <ScoreCard
                                 title="Revenue"
                                 value={`${getSymbol()}${formatCompact(overview?.total_revenue || 0)}`}
                                 icon={Coins}
+                                delay={0.2}
+                            />
+                            <ScoreCard
+                                title="RoII"
+                                value={`${overview?.roii || 0}%`}
+                                subtext="Return on Inv."
+                                icon={Percent}
                                 delay={0.3}
                             />
                             <ScoreCard
@@ -373,15 +383,70 @@ const Dashboard = () => {
                                 value={`${getSymbol()}${formatCompact(overview?.total_payout || 0)}`}
                                 subtext="Total Estimated"
                                 icon={Coins}
-                                delay={0.35}
+                                delay={0.4}
                             />
                             <ScoreCard
                                 title="AOV"
                                 value={`${getSymbol()}${aov}`}
                                 subtext="Avg Order Value"
                                 icon={TrendingUp}
-                                delay={0.4}
+                                delay={0.5}
                             />
+                        </div>
+
+                        {/* Secondary Row: Glass Dock (Activity) */}
+                        <div className="flex flex-wrap md:flex-nowrap items-center justify-between px-6 py-3 bg-white/40 backdrop-blur-md border border-white/60 rounded-full shadow-sm mx-auto w-full md:max-w-5xl mb-8 gap-4 md:gap-0">
+
+                            <div className="flex items-center gap-3 px-2 group">
+                                <div className="p-2 rounded-full bg-indigo-50/50 text-indigo-500 group-hover:bg-indigo-100/50 transition-colors">
+                                    <Users className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Active Influencers</p>
+                                    <p className="text-lg font-bold text-gray-800">{formatCompact(overview?.total_influencers || 0)}</p>
+                                </div>
+                            </div>
+
+                            <div className="hidden md:block w-px h-8 bg-gray-200/60"></div>
+
+                            <div className="flex items-center gap-3 px-2 group">
+                                <div className="p-2 rounded-full bg-purple-50/50 text-purple-500 group-hover:bg-purple-100/50 transition-colors">
+                                    <MousePointer2 className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Total Clicks</p>
+                                    <p className="text-lg font-bold text-gray-800">{formatCompact(overview?.total_clicks || 0)}</p>
+                                </div>
+                            </div>
+
+                            <div className="hidden md:block w-px h-8 bg-gray-200/60"></div>
+
+                            <div className="flex items-center gap-3 px-2 group">
+                                <div className="p-2 rounded-full bg-blue-50/50 text-blue-500 group-hover:bg-blue-100/50 transition-colors">
+                                    <Activity className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Total Events</p>
+                                    <p className="text-lg font-bold text-gray-800">{formatCompact(overview?.total_events || 0)}</p>
+                                </div>
+                            </div>
+
+                            <div className="hidden md:block w-px h-8 bg-gray-200/60"></div>
+
+                            <div className="flex items-center gap-3 px-2 group">
+                                <div className="p-2 rounded-full bg-emerald-50/50 text-emerald-500 group-hover:bg-emerald-100/50 transition-colors">
+                                    <ShoppingCart className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Conversions</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <p className="text-lg font-bold text-gray-800">{formatCompact(overview?.total_conversions || 0)}</p>
+                                        <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                                            {overview?.conversion_rate || 0}%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Charts Grid */}

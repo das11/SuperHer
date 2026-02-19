@@ -302,3 +302,37 @@ async def get_journey_stats(
          raise HTTPException(status_code=401, detail="Authentication required")
 
     return await StatsService.get_journey_stats(db, target_id, from_date, to_date, campaign_id, influencer_id)
+
+
+@router.get("/forecast")
+async def get_forecast(
+    advertiser_id: Optional[int] = Query(None),
+    days_ahead: int = Query(30, ge=7, le=90),
+    current_advertiser: Optional[Advertiser] = Depends(deps.superroot_get_current_advertiser),
+    current_user: Optional[User] = Depends(deps.get_current_active_user),
+    db: AsyncSession = Depends(deps.get_db)
+):
+    """
+    Get traffic (clicks) and sales (purchases) forecast using Holt-Winters.
+    Returns historical data, forecast data, and confidence bands.
+    If insufficient data (< 14 days), returns a warning payload.
+    """
+    from app.services.forecast import ForecastService
+
+    target_id = None
+    if current_advertiser:
+        target_id = current_advertiser.id
+        if advertiser_id and advertiser_id != target_id:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=403, detail="Cannot override Advertiser ID with API Key")
+    elif current_user:
+        if current_user.role == UserRole.ADVERTISER:
+            target_id = current_user.advertiser_id
+        elif current_user.role == UserRole.SUPERROOT:
+            target_id = advertiser_id
+
+    if target_id is None and (not current_user or current_user.role != UserRole.SUPERROOT):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    return await ForecastService.get_forecast(db, target_id, days_ahead)

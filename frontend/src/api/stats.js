@@ -113,5 +113,15 @@ export const statsApi = {
     getJourneyStats: (apiKey, params) => client.get('/stats/journey', {
         headers: apiKey ? { 'X-API-KEY': apiKey } : {},
         params
+    }),
+
+    /**
+     * Get Forecast (Clicks & Sales prediction)
+     * @param {string|null} apiKey
+     * @param {object} params - { advertiser_id, days_ahead }
+     */
+    getForecast: (apiKey, params) => client.get('/stats/forecast', {
+        headers: apiKey ? { 'X-API-KEY': apiKey } : {},
+        params
     })
 };

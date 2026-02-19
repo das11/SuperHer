@@ -22,16 +22,18 @@ export default function Sidebar() {
         navigate('/login');
     };
 
+    const isSuperRoot = user?.role === 'SUPERROOT';
+
     const links = [
-        { to: "/", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
-        { to: "/dashboard", label: "Performance", icon: <TrendingUp size={20} /> },
-        { to: "/advertisers", label: "Advertisers", icon: <Users size={20} /> },
+        { to: "/dashboard", label: "Performance Overview", icon: <TrendingUp size={20} /> },
+        { to: "/advertisers", label: "Advertisers", icon: <Users size={20} />, superOnly: true },
         { to: "/campaigns", label: "Campaigns", icon: <Megaphone size={20} /> },
         { to: "/influencers", label: "Influencers", icon: <UserPlus size={20} /> },
         { to: "/trackers", label: "Trackers", icon: <LayoutGrid size={20} /> },
         { to: "/integration-docs", label: "Integration", icon: <BookOpen size={20} /> },
+        { to: "/account", label: "Account Overview", icon: <LayoutDashboard size={20} /> },
         { to: "/settings", label: "Settings", icon: <Settings size={20} /> },
-    ];
+    ].filter(link => !link.superOnly || isSuperRoot);
 
     return (
         <div

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -29,7 +29,8 @@ function App() {
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/account" element={<Home />} />
               <Route path="/advertisers" element={<Advertisers />} />
               <Route path="/campaigns" element={<Campaigns />} />
               <Route path="/campaigns/:id/settings" element={<CampaignSettings />} />

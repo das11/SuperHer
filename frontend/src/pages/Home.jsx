@@ -120,9 +120,12 @@ export default function Home() {
         }
     }, [user]);
 
+    const isSuperRoot = user?.role === 'SUPERROOT';
+
     // Cards Configuration
     const cards = [
-        {
+        // Platform-wide advertiser count — only visible to SuperRoot
+        ...(isSuperRoot ? [{
             title: 'Total Advertisers',
             value: formatCompact(stats.advertisers),
             trend: 'Platform-wide',
@@ -130,7 +133,7 @@ export default function Home() {
             to: '/advertisers',
             color: 'bg-blue-600',
             trendColor: 'text-blue-600 bg-blue-50'
-        },
+        }] : []),
         {
             title: 'Active Campaigns',
             value: formatCompact(stats.activeCampaigns),
@@ -176,8 +179,8 @@ export default function Home() {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard Overview</h2>
-                    <p className="text-slate-500 mt-2">Welcome back. Here's what's happening across the platform.</p>
+                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Account Overview</h2>
+                    <p className="text-slate-500 mt-2">Welcome back. Here's a summary of your account.</p>
                 </div>
                 <div className="flex gap-3">
                     <Link to="/integration-docs" className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
@@ -192,7 +195,7 @@ export default function Home() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className={`grid grid-cols-1 md:grid-cols-2 ${isSuperRoot ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-6`}>
                 {cards.map((card, idx) => (
                     <Link
                         key={idx}

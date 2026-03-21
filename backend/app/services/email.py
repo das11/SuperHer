@@ -31,28 +31,16 @@ class EmailService:
         self._load_logo()
 
     def _load_logo(self):
-        """Loads the logo file as bytes for embedding."""
-        try:
-            # Local dev path provided by user:
-            logo_path = "/Users/interfacev2/KXM-BM/Prospects/SuperHer/Dev/Superher-logo.png"
-            if os.path.exists(logo_path):
-                with open(logo_path, "rb") as image_file:
-                    self.logo_bytes = image_file.read()
-            else:
-                logger.warning(f"Logo file not found at {logo_path}")
-        except Exception as e:
-            logger.error(f"Failed to load logo: {e}")
+        """No longer loading local logo. Using public URL for emails."""
+        pass
 
     def get_email_template(self, title: str, recipient_name: str, content_html: str) -> str:
         """
         Returns a formatted HTML email template.
         """
-        # If logo exists, we reference it via CID. Otherwise text fallback.
-        logo_html = ""
-        if self.logo_bytes:
-            logo_html = '<img src="cid:logo" alt="SuperHer Logo" style="height: 40px; width: auto;">'
-        else:
-            logo_html = '<h1 style="color: #7C3AED; margin: 0; font-size: 24px;">SuperHer</h1>'
+        # Use a public URL for the logo so it renders correctly in email clients
+        logo_url = "https://superher.in/Superher-logo.png" # Assuming it is hosted here or will be
+        logo_html = f'<img src="{logo_url}" alt="SuperHer Logo" style="height: 40px; width: auto;">'
 
         return f"""
         <!DOCTYPE html>
@@ -121,14 +109,7 @@ class EmailService:
         part_html = MIMEText(html_body, 'html')
         msg_alternative.attach(part_html)
 
-        # Attach Logo (if exists)
-        if self.logo_bytes:
-            img = MIMEImage(self.logo_bytes)
-            # Define the Content-ID
-            img.add_header('Content-ID', '<logo>')
-            # Prevent it from being an attachment file
-            img.add_header('Content-Disposition', 'inline', filename='logo.png')
-            msg.attach(img)
+
 
         try:
             response = self.ses_client.send_raw_email(

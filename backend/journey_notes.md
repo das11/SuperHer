@@ -316,6 +316,47 @@ Imagine 3 raw events in the database:
 
 ---
 
+## Phase 6: Revenue Share & Payouts (The Monetization Layer)
+
+**Objective**: Enable advertisers to compensate influencers based on specific performance models (Percentage or Flat Fee) and calculate "Estimated Payout" dynamically.
+
+### 1. Database Schema (`CampaignInfluencer`)
+
+We upgraded the simple relationship table to a full SQLAlchemy Model to store per-link configuration.
+
+*   **Migration**: `alembic revision -m "add_revenue_share_columns"`
+*   **New Columns**:
+    *   `revenue_share_type`: Enum (`percentage` | `flat`).
+    *   `revenue_share_value`: Float (e.g., `15.0`).
+*   **Why**: This allows granular control. One influencer can get 10% while another gets a $50 flat fee on the *same* campaign.
+
+### 2. Backend Logic (`StatsService`)
+
+*   **Dynamic Payout Calculation**:
+    *   We modified the aggregation queries in `stats.py` to calculate payout *on the fly* during reporting.
+    *   **The Math**:
+        ```sql
+        SUM(
+            CASE 
+                WHEN share_type = 'percentage' THEN (revenue * share_value / 100)
+                WHEN share_type = 'flat' THEN (conversions * share_value)
+                ELSE 0 
+            END
+        )
+        ```
+    *   **Handling Nulls**: Heavily used `COALESCE(val, 0)` to ensure that missing config doesn't break the entire dashboard report.
+
+### 3. Frontend Integration
+
+*   **Dashboard Updates**:
+    *   **Scorecards**: Added "Est. Payout" card to both *Home* and *Performance* dashboards.
+    *   **Columns**: Added a dedicated `Payout` column to the breakdown tables for Campaigns and Influencers.
+*   **Visual Refinements**:
+    *   **Smart Formatting**: Implemented a `formatCompact` utility to show large numbers as `1.5M` or `10K`, while keeping small currency values precise (`$123.45`).
+    *   **Layout**: Updated the grid to 5 columns to fit the new metric without cramping the UI.
+
+---
+
 ## Annexure I - Identity, Auth & Security
 
 **Objective**: Implement "Zero Trust" security where every API request is strictly verified for identity (Authentication) and data access rights (Authorization).
@@ -421,44 +462,5 @@ We chose **AWS Simple Email Service (SES)** for its reliability and high deliver
 *   **Animation**: Used `framer-motion` for a smooth "Spring" entrance/exit, adding a premium feel to the notification.
 
 ---
-
-## Phase 6: Revenue Share & Payouts (The Monetization Layer)
-
-**Objective**: Enable advertisers to compensate influencers based on specific performance models (Percentage or Flat Fee) and calculate "Estimated Payout" dynamically.
-
-### 1. Database Schema (`CampaignInfluencer`)
-
-We upgraded the simple relationship table to a full SQLAlchemy Model to store per-link configuration.
-
-*   **Migration**: `alembic revision -m "add_revenue_share_columns"`
-*   **New Columns**:
-    *   `revenue_share_type`: Enum (`percentage` | `flat`).
-    *   `revenue_share_value`: Float (e.g., `15.0`).
-*   **Why**: This allows granular control. One influencer can get 10% while another gets a $50 flat fee on the *same* campaign.
-
-### 2. Backend Logic (`StatsService`)
-
-*   **Dynamic Payout Calculation**:
-    *   We modified the aggregation queries in `stats.py` to calculate payout *on the fly* during reporting.
-    *   **The Math**:
-        ```sql
-        SUM(
-            CASE 
-                WHEN share_type = 'percentage' THEN (revenue * share_value / 100)
-                WHEN share_type = 'flat' THEN (conversions * share_value)
-                ELSE 0 
-            END
-        )
-        ```
-    *   **Handling Nulls**: Heavily used `COALESCE(val, 0)` to ensure that missing config doesn't break the entire dashboard report.
-
-### 3. Frontend Integration
-
-*   **Dashboard Updates**:
-    *   **Scorecards**: Added "Est. Payout" card to both *Home* and *Performance* dashboards.
-    *   **Columns**: Added a dedicated `Payout` column to the breakdown tables for Campaigns and Influencers.
-*   **Visual Refinements**:
-    *   **Smart Formatting**: Implemented a `formatCompact` utility to show large numbers as `1.5M` or `10K`, while keeping small currency values precise (`$123.45`).
-    *   **Layout**: Updated the grid to 5 columns to fit the new metric without cramping the UI.
 
 

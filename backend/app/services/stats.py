@@ -241,7 +241,9 @@ class StatsService:
                 Influencer.social_handle,
                 func.count(CustomerEvent.id).label("total_events"),
                 func.sum(case((CustomerEvent.event_type == EventType.purchase, 1), else_=0)).label("purchases"),
+                func.sum(case((CustomerEvent.event_type == EventType.add_to_cart, 1), else_=0)).label("atc"),
                 func.sum(case((CustomerEvent.event_type == EventType.purchase, CustomerEvent.revenue), else_=0)).label("revenue"),
+                func.sum(case((CustomerEvent.event_type == EventType.add_to_cart, CustomerEvent.revenue), else_=0)).label("cart_revenue"),
                 func.sum(
                     case((CustomerEvent.event_type == EventType.purchase,
                          case(
@@ -277,8 +279,12 @@ class StatsService:
                     "handle": row.social_handle,
                     "events": row.total_events,
                     "purchases": row.purchases,
+                    "atc": row.atc,
                     "revenue": row.revenue or 0.0,
-                    "payout": row.payout or 0.0
+                    "cart_revenue": row.cart_revenue or 0.0,
+                    "payout": row.payout or 0.0,
+                    "aov": (float(row.revenue or 0.0) / float(row.purchases)) if row.purchases and float(row.purchases) > 0 else 0.0,
+                    "acv": (float(row.cart_revenue or 0.0) / float(row.atc)) if row.atc and float(row.atc) > 0 else 0.0
                 }
                 for row in result
             ]

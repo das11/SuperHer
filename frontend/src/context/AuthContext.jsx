@@ -87,6 +87,30 @@ export const AuthProvider = ({ children }) => {
         });
     };
 
+    const forgotPassword = (email) => {
+        return new Promise((resolve, reject) => {
+            const user = new CognitoUser({ Username: email, Pool: UserPool });
+            user.forgotPassword({
+                onSuccess: (data) => resolve(data),
+                onFailure: (err) => reject(err),
+            });
+        });
+    };
+
+    const confirmPassword = (email, code, newPassword) => {
+        return new Promise((resolve, reject) => {
+            const user = new CognitoUser({ Username: email, Pool: UserPool });
+            user.confirmPassword(code, newPassword, {
+                onSuccess() {
+                    resolve();
+                },
+                onFailure(err) {
+                    reject(err);
+                }
+            });
+        });
+    };
+
     const fetchUserFromSession = async (cognitoUser) => {
         return new Promise((resolve, reject) => {
             cognitoUser.getSession(async (err, session) => {
@@ -171,7 +195,9 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         signup,
-        verifyCode
+        verifyCode,
+        forgotPassword,
+        confirmPassword
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

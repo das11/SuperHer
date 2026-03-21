@@ -246,7 +246,7 @@ async def main():
             
             payload = {
                 "action": action,
-                "value": round(random.uniform(dist_val_min, dist_val_max), 2) if action == "purchase" else 0
+                "value": round(random.uniform(dist_val_min, dist_val_max), 2)
             }
             
             # Determine Attribution Source

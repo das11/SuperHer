@@ -256,15 +256,16 @@ const InfluencersList = ({ data, currencySymbol }) => {
             <div className="space-y-2">
                 {/* Header Row */}
                 <div className="grid grid-cols-12 gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider px-2 pb-2 border-b border-gray-100">
-                    <div className="col-span-5 pl-2">Influencer</div>
-                    <div className="col-span-2 text-right">Events</div>
+                    <div className="col-span-4 pl-2">Influencer</div>
                     <div className="col-span-2 text-right">Orders</div>
-                    <div className="col-span-3 text-right">Revenue</div>
+                    <div className="col-span-2 text-right">AOV</div>
+                    <div className="col-span-2 text-right">ACV</div>
+                    <div className="col-span-2 text-right">Revenue</div>
                 </div>
 
                 {data.slice(0, 5).map((inf, idx) => (
                     <div key={idx} className="grid grid-cols-12 gap-2 items-center p-3 rounded-xl hover:bg-gray-50 transition-colors group">
-                        <div className="col-span-5 flex items-center gap-3 min-w-0">
+                        <div className="col-span-4 flex items-center gap-3 min-w-0">
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs shadow-sm ring-2 ring-white shrink-0">
                                 {inf.name.charAt(0)}
                             </div>
@@ -275,12 +276,15 @@ const InfluencersList = ({ data, currencySymbol }) => {
                         </div>
 
                         <div className="col-span-2 text-right text-xs text-gray-600 font-medium">
-                            {(inf.total_events || inf.events || 0).toLocaleString()}
-                        </div>
-                        <div className="col-span-2 text-right text-xs text-gray-600 font-medium">
                             {(inf.purchases || 0).toLocaleString()}
                         </div>
-                        <div className="col-span-3 text-right">
+                        <div className="col-span-2 text-right text-xs text-gray-600 font-medium">
+                            {currencySymbol}{formatCompact(inf.aov || 0)}
+                        </div>
+                        <div className="col-span-2 text-right text-xs text-gray-600 font-medium">
+                            {currencySymbol}{formatCompact(inf.acv || 0)}
+                        </div>
+                        <div className="col-span-2 text-right">
                             <p className="font-bold text-gray-900 text-sm">{currencySymbol}{formatCompact(inf.revenue)}</p>
                             <p className="text-[9px] text-emerald-600 font-medium">
                                 {currencySymbol}{formatCompact(inf.payout || 0)} pay
@@ -1252,6 +1256,8 @@ const Dashboard = () => {
                                                         {activeTab === 'links' && <th className="pb-4 font-semibold text-right">Clicks</th>}
                                                         <th className="pb-4 font-semibold text-right">Events</th>
                                                         <th className="pb-4 font-semibold text-right">Purchases</th>
+                                                        {activeTab === 'influencers' && <th className="pb-4 font-semibold text-right">AOV</th>}
+                                                        {activeTab === 'influencers' && <th className="pb-4 font-semibold text-right">ACV</th>}
                                                         {(activeTab === 'campaigns' || activeTab === 'influencers') && <th className="pb-4 font-semibold text-right">Payout</th>}
                                                         <th className="pb-4 font-semibold text-right pr-4">Revenue</th>
                                                     </tr>
@@ -1292,6 +1298,16 @@ const Dashboard = () => {
                                                             <td className="py-4 text-right text-gray-600">
                                                                 {(row.purchases || 0).toLocaleString()}
                                                             </td>
+                                                            {activeTab === 'influencers' && (
+                                                                <td className="py-4 text-right text-gray-600 font-medium">
+                                                                    {getSymbol()}{formatCompact(row.aov || 0)}
+                                                                </td>
+                                                            )}
+                                                            {activeTab === 'influencers' && (
+                                                                <td className="py-4 text-right text-gray-600 font-medium">
+                                                                    {getSymbol()}{formatCompact(row.acv || 0)}
+                                                                </td>
+                                                            )}
                                                             {(activeTab === 'campaigns' || activeTab === 'influencers') && (
                                                                 <td className="py-4 text-right text-gray-600">
                                                                     {getSymbol()}{formatCompact(row.payout || 0)}
